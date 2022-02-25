@@ -1,0 +1,9 @@
+{
+  "name": "mk-firebase-utils",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "peerDependencies": {
+    "firebase": "^7.0.0 || ^8.0.0"
+  }
+}

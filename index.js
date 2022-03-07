@@ -1,5 +1,5 @@
 // todo just take firebase or admin object
-export const firebaseUtils = (_, db, storage) => {
+export const mkFirebaseUtils = (_, db, storage) => {
   class Path {
     constructor(doc, field) {
       this.doc = doc;

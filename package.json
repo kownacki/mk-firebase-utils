@@ -2,20 +2,20 @@
   "name": "mk-firebase-utils",
   "version": "0.1.0",
   "private": true,
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
   "exports": {
     "./admin": {
       "types": "./lib/admin.d.js",
-      "default": "./lib/admin.js"
+      "require": "./lib/admin.js",
+      "import": "./lib/esm/admin.js"
     },
     "./web": {
       "types": "./lib/web.d.js",
-      "default": "./lib/web.js"
+      "require": "./lib/web.js",
+      "import": "./lib/esm/web.js"
     }
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.build-cjs.json && tsc --project tsconfig.build-mjs.json",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {

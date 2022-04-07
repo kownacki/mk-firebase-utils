@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import _, {padStart, set} from 'lodash';
-import {Path, createPath, isRootPath, generateUid, getGet, getUpdate, DocumentSnapshot} from './index';
+import {Path, createPath, isRootPath, generateUid, baseGet, baseUpdate, DocumentSnapshot} from './common';
 
 const fakeNow = 123456;
 const fakeRandomResult = 42424242;
@@ -16,9 +16,9 @@ jest.mock('lodash', () => {
 });
 (_.random as jest.Mock).mockReturnValue(fakeRandomResult);
 
-describe('firebaseUtils', () => {
+describe('common', () => {
   afterAll(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('Path', () => {
@@ -121,7 +121,7 @@ describe('firebaseUtils', () => {
     });
   });
 
-  describe('getGet', () => {
+  describe('baseGet', () => {
     const createGetDocMock = (dataStub?: any) => {
       const documentSnapshotStub = {
         data: () => dataStub,
@@ -129,18 +129,12 @@ describe('firebaseUtils', () => {
       return jest.fn().mockReturnValue(Promise.resolve(documentSnapshotStub));
     }
 
-    it('Generates "get" function', async () => {
-      const getDocMock = createGetDocMock();
-
-      const getData = getGet(getDocMock);
-
-      expect(getData).toBeInstanceOf(Function);
-    });
-
-    describe('Generated "get" function', () => {
+    describe('Generated "getData" function', () => {
       const createGetDataFixture = (pathStub: Path, docStub?: object) => {
         const getDocMock = createGetDocMock(docStub);
-        const getData = getGet(getDocMock);
+        const getData = (path: Path) => {
+          return baseGet(getDocMock, path);
+        }
         return {
           pathStub,
           docStub,
@@ -151,18 +145,18 @@ describe('firebaseUtils', () => {
 
       type GetDataFixture = ReturnType<typeof createGetDataFixture>;
 
-      const expectGetDataToHaveCalledGetDocMock = (getGetFixture: GetDataFixture) => {
-        expect(getGetFixture.getDocMock).toBeCalledWith(getGetFixture.pathStub.doc);
+      const expectGetDataToHaveCalledGetDocMock = (fixture: GetDataFixture) => {
+        expect(fixture.getDocMock).toBeCalledWith(fixture.pathStub.doc);
       }
 
       it('Gets data - root path', async () => {
         const pathStub = createPath('doc-part');
         const dataStub = {};
-        const getDataFixture = createGetDataFixture(pathStub, dataStub)
+        const fixture = createGetDataFixture(pathStub, dataStub)
 
-        const getDataResult = await getDataFixture.getData(pathStub);
+        const getDataResult = await fixture.getData(pathStub);
 
-        expectGetDataToHaveCalledGetDocMock(getDataFixture);
+        expectGetDataToHaveCalledGetDocMock(fixture);
         expect(getDataResult).toBe(dataStub);
       });
 
@@ -171,11 +165,11 @@ describe('firebaseUtils', () => {
         const pathStub = createPath('doc-part', field);
         const dataStub = {};
         const docStub = {[field]: dataStub};
-        const getDataFixture = createGetDataFixture(pathStub, docStub)
+        const fixture = createGetDataFixture(pathStub, docStub)
 
-        const getDataResult = await getDataFixture.getData(pathStub);
+        const getDataResult = await fixture.getData(pathStub);
 
-        expectGetDataToHaveCalledGetDocMock(getDataFixture);
+        expectGetDataToHaveCalledGetDocMock(fixture);
         expect(getDataResult).toBe(dataStub);
       });
 
@@ -184,22 +178,22 @@ describe('firebaseUtils', () => {
         const pathStub = createPath('doc-part', field);
         const dataStub = {};
         const docStub = set({}, field, dataStub);
-        const getDataFixture = createGetDataFixture(pathStub, docStub)
+        const fixture = createGetDataFixture(pathStub, docStub)
 
-        const getDataResult = await getDataFixture.getData(pathStub);
+        const getDataResult = await fixture.getData(pathStub);
 
-        expectGetDataToHaveCalledGetDocMock(getDataFixture);
+        expectGetDataToHaveCalledGetDocMock(fixture);
         expect(getDataResult).toBe(dataStub);
       });
 
       it('Gets data - doc doesn\'t exist - root path', async () => {
         const pathStub = createPath('doc-part');
         const docStub = undefined;
-        const getDataFixture = createGetDataFixture(pathStub, docStub)
+        const fixture = createGetDataFixture(pathStub, docStub)
 
-        const getDataResult = await getDataFixture.getData(pathStub);
+        const getDataResult = await fixture.getData(pathStub);
 
-        expectGetDataToHaveCalledGetDocMock(getDataFixture);
+        expectGetDataToHaveCalledGetDocMock(fixture);
         expect(getDataResult).toEqual({});
       });
 
@@ -207,11 +201,11 @@ describe('firebaseUtils', () => {
         const field = 'field1.field2.field3';
         const pathStub = createPath('doc-part', field);
         const docStub = {field1: {}};
-        const getDataFixture = createGetDataFixture(pathStub, docStub)
+        const fixture = createGetDataFixture(pathStub, docStub)
 
-        const getDataResult = await getDataFixture.getData(pathStub);
+        const getDataResult = await fixture.getData(pathStub);
 
-        expectGetDataToHaveCalledGetDocMock(getDataFixture);
+        expectGetDataToHaveCalledGetDocMock(fixture);
         expect(getDataResult).toBeUndefined();
       });
 
@@ -219,33 +213,27 @@ describe('firebaseUtils', () => {
         const field = 'field1.field2.field3';
         const pathStub = createPath('doc-part', field);
         const docStub = undefined;
-        const getDataFixture = createGetDataFixture(pathStub, docStub)
+        const fixture = createGetDataFixture(pathStub, docStub)
 
-        const getDataResult = await getDataFixture.getData(pathStub);
+        const getDataResult = await fixture.getData(pathStub);
 
-        expectGetDataToHaveCalledGetDocMock(getDataFixture);
+        expectGetDataToHaveCalledGetDocMock(fixture);
         expect(getDataResult).toBeUndefined();
       });
     });
   });
 
-  describe('getUpdate', () => {
+  describe('baseUpdate', () => {
     const createSetDocMock = () => {
       return jest.fn().mockReturnValue(Promise.resolve());
     }
 
-    it('Generates "update" function', async () => {
-      const setDocMock = createSetDocMock();
-
-      const updateData = getUpdate(setDocMock);
-
-      expect(updateData).toBeInstanceOf(Function);
-    });
-
-    describe('Generated "update" function', () => {
+    describe('Generated "updateData" function', () => {
       const createUpdateDataFixture = () => {
         const setDocMock = createSetDocMock().mockReturnValue(Promise.resolve());
-        const updateData = getUpdate(setDocMock);
+        const updateData = (path: Path, data: any) => {
+          return baseUpdate(setDocMock, path, data);
+        };
         return {
           setDocMock,
           updateData,
@@ -255,33 +243,33 @@ describe('firebaseUtils', () => {
       it('Updates data - root path', async () => {
         const pathStub = createPath('doc-part');
         const dataStub = {data: 'data'};
-        const updateDataFixture = createUpdateDataFixture();
+        const fixture = createUpdateDataFixture();
 
-        await updateDataFixture.updateData(pathStub, dataStub);
+        await fixture.updateData(pathStub, dataStub);
 
-        expect(updateDataFixture.setDocMock).toBeCalledWith(pathStub.doc, dataStub);
+        expect(fixture.setDocMock).toBeCalledWith(pathStub.doc, dataStub);
       });
 
       it('Updates data - root level field', async () => {
         const field = 'simple-field';
         const pathStub = createPath('doc-part', field);
         const dataStub = {data: 'data'};
-        const updateDataFixture = createUpdateDataFixture();
+        const fixture = createUpdateDataFixture();
 
-        await updateDataFixture.updateData(pathStub, dataStub);
+        await fixture.updateData(pathStub, dataStub);
 
-        expect(updateDataFixture.setDocMock).toBeCalledWith(pathStub.doc, {[field]: dataStub}, {mergeFields: [pathStub.field]});
+        expect(fixture.setDocMock).toBeCalledWith(pathStub.doc, {[field]: dataStub}, {mergeFields: [pathStub.field]});
       });
 
       it('Updates data - complex field', async () => {
         const field = 'field1.field2.field3';
         const pathStub = createPath('doc-part', field);
         const dataStub = {data: 'data'};
-        const updateDataFixture = createUpdateDataFixture();
+        const fixture = createUpdateDataFixture();
 
-        await updateDataFixture.updateData(pathStub, dataStub);
+        await fixture.updateData(pathStub, dataStub);
 
-        expect(updateDataFixture.setDocMock).toBeCalledWith(pathStub.doc, set({}, field, dataStub), {mergeFields: [pathStub.field]});
+        expect(fixture.setDocMock).toBeCalledWith(pathStub.doc, set({}, field, dataStub), {mergeFields: [pathStub.field]});
       });
     });
   });

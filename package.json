@@ -19,7 +19,8 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "lodash-es": "^4.17.21"
   },
   "peerDependencies": {
     "firebase": "^9.0.0",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@types/jest": "^27.4.1",
     "@types/lodash": "^4.14.181",
+    "@types/lodash-es": "^4.17.6",
     "@types/mime": "^2.0.3",
     "firebase": "^9.0.0",
     "firebase-admin": "^10.0.0",

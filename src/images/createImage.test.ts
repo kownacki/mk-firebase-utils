@@ -2,8 +2,9 @@
  * @jest-environment jsdom
  */
 import firebaseStorage from 'firebase/storage';
-import mime from 'mime';
+import Mime from 'mime/Mime';
 import {generateUid} from '../common';
+import '../mime.min.js';
 import {createFirebaseStorageMock} from '../testutils';
 import {createImage} from './createImage';
 import {Image, ImageData} from './types';
@@ -21,15 +22,16 @@ jest.mock('../common', () => {
 });
 (generateUid as jest.Mock).mockReturnValue(fakeGeneratedUid);
 
-jest.mock('mime', () => {
-  return {
+jest.mock('../mime.min.js', () => {
+  window.mime = {
     getExtension: jest.fn(),
-  };
+  } as unknown as Mime;
 });
 
 describe('createImage', () => {
   afterAll(() => {
     jest.restoreAllMocks();
+    delete (window as {mime?: Mime}).mime;
   });
 
   afterEach(() => {
@@ -37,7 +39,7 @@ describe('createImage', () => {
   });
 
   const createCreateImageFixture = (imageDataStub: ImageData, extension: string | null) => {
-    (mime.getExtension as jest.Mock).mockReturnValue(extension);
+    (window.mime.getExtension as jest.Mock).mockReturnValue(extension);
     const expectedGeneratedName = `${fakeGeneratedUid}${extension ? `.${extension}` : ''}`;
 
     return {
@@ -49,7 +51,7 @@ describe('createImage', () => {
   type CreateImageFixture = ReturnType<typeof createCreateImageFixture>;
 
   const expectCorrectImageCreation = (fixture: CreateImageFixture, resultImage: Image) => {
-    expect(mime.getExtension).toBeCalledWith(fixture.imageDataStub.type);
+    expect((window.mime as Mime).getExtension).toBeCalledWith(fixture.imageDataStub.type);
     expect(generateUid).toBeCalled();
     expect(firebaseStorageMock.ref).toBeCalledWith(firebaseStorageMock.storageInstanceMock, `images/${fixture.expectedGeneratedName}`);
     expect(firebaseStorageMock.uploadBytes).toBeCalledWith(firebaseStorageMock.fakeRef, fixture.imageDataStub);

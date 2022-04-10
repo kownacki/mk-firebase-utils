@@ -4,12 +4,12 @@
   "private": true,
   "exports": {
     "./admin": {
-      "types": "./lib/admin.d.js",
+      "types": "./lib/admin.d.ts",
       "require": "./lib/admin.js",
       "import": "./lib/esm/admin.js"
     },
     "./web": {
-      "types": "./lib/web.d.js",
+      "types": "./lib/web.d.ts",
       "require": "./lib/web.js",
       "import": "./lib/esm/web.js"
     }
